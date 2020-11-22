@@ -3,45 +3,44 @@ import java.net.*;
 
 public class ClientSocket {
 
-    private final Logger log = new Logger("[CLIENT] ");
-    private static final int PORT = 3000;
-    protected final byte[] buffer = new byte[512];
+    private final Logger log;
+    private final byte[] buffer;
     private DatagramSocket socket;
     private InetAddress hostIP;
 
-    public ClientSocket() {
+    public ClientSocket(Logger log) {
+        this.log = log;
+        this.buffer = new byte[Constants.OFFSET_SIZE];
         try {
             this.hostIP = InetAddress.getByName("localhost");
-            this.socket = new DatagramSocket();
-            this.socket.setSoTimeout(500);
+            this.socket = new DatagramSocket(Constants.CLIENT_PORT);
+//            this.socket.setSoTimeout(500);
         } catch (UnknownHostException | SocketException error) {
-            System.err.println("Erro while creating client socket: \n" + error);
+            log.error("Erro while creating client socket", error);
             System.exit(-1);
         }
     }
 
-    public void send(byte[] data) {
+    public void send(Package pack) {
+        byte[] data = pack.getData();
         try {
-            this.socket.send(new DatagramPacket(data, data.length, this.hostIP, PORT));
+            socket.send(new DatagramPacket(data, data.length, hostIP, Constants.SERVER_PORT));
+            log.info("Sending sequence: " + pack.getId());
         } catch (IOException e) {
-            log.err("Error while sending packet " + e);
+            log.error("Error while sending packet", e);
         }
     }
 
-    public byte[] receive(){
-        DatagramPacket getAck = new DatagramPacket(this.buffer, this.buffer.length);
+    public Package receive() {
+        DatagramPacket getAck = new DatagramPacket(buffer, buffer.length);
         try {
-            this.socket.receive(getAck);
+            socket.receive(getAck);
         } catch (IOException e) {
-            this.log("Error while receiving packet " + e);
+            log.error("Error while receiving packet ", e);
         }
-        return getAck.getData();
-    }
-
-    public void end() {
-        byte[] data = "end".getBytes();
-        this.send(data);
-        this.socket.close();
+        Package pack = Package.decomposeACK(getAck.getData());
+        log.info("Receiving ACK: " + pack.getId());
+        return pack;
     }
 }
 

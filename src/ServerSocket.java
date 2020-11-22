@@ -3,33 +3,42 @@ import java.net.*;
 
 public class ServerSocket {
 
-    private final Logger log = new Logger("[SERVER] ");
-    protected final byte[] buffer = new byte[512];
-    private final DatagramSocket socket;
+    private final Logger log;
+    private final byte[] buffer;
+    private DatagramSocket socket;
+    private InetAddress hostIP;
 
-    public ServerSocket() {
+    public ServerSocket(Logger log) {
+        this.log = log;
+        this.buffer = new byte[Constants.BUFFER_SIZE];
         try {
-            this.socket = new DatagramSocket(9876);
-            this.receive();
-        } catch (SocketException e) {
-            e.printStackTrace();
+            this.hostIP = InetAddress.getByName("localhost");
+            this.socket = new DatagramSocket(Constants.SERVER_PORT);
+        } catch (SocketException | UnknownHostException e) {
+            log.error("Erro na inicialização do socket servidor", e);
+            System.exit(-1);
         }
     }
 
-    private void receive() throws IOException {
-        DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-        this.socket.receive(receivePacket);
+    public Package receive() {
+        DatagramPacket datagram = new DatagramPacket(buffer, buffer.length);
+        try {
+            socket.receive(datagram);
+        } catch (IOException e) {
+            log.error("Erro ao receber pacote", e);
+        }
+        Package pack = Package.decompose(datagram.getData());
+        log.info("Receiving sequence: " + pack.getId());
+        return pack;
     }
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("Server started at port: 9876");
-
-        byte[] receiveData = new byte[100000];
-        while (true) {
-
-
-            String sentence = new String(receivePacket.getData());
-            System.out.println("Mensagem recebida: " + sentence);
+    public void send(Package pack) {
+        byte[] data = pack.getData();
+        try {
+            socket.send(new DatagramPacket(data, data.length, hostIP, Constants.CLIENT_PORT));
+            log.info("Sending ACK: " + pack.getId());
+        } catch (IOException e) {
+            log.error("Erro ao enviar pacote", e);
         }
     }
 

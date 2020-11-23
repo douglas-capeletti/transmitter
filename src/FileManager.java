@@ -68,4 +68,8 @@ public class FileManager {
     public void setOutputFilename(String outputFilename) {
         this.outputFilename = outputFilename;
     }
+
+    public File getFile(){
+        return file;
+    }
 }

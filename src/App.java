@@ -6,23 +6,53 @@ public class App {
     private static final Logger log = new Logger("[MENU] ");
 
     public static void main(String[] args) {
-        boolean isClient = requestMode();
-        if (isClient) {
-            log.info("Modo de operação -> CLIENT");
-//            new Client(requestContent(JFileChooser.FILES_ONLY));
-            new Client(new File("/home/douglas-paz/personal/tests/source/file"));
+        if (args.length == 2) {
+            run(cliMode(args[0]), cliContent(args[1]));
         } else {
-            log.info("Modo de operação -> SERVER");
-//            new Server(requestContent(JFileChooser.DIRECTORIES_ONLY));
-            new Server(new File("/home/douglas-paz/personal/tests/destination"));
+            boolean isClient = requestMode();
+            run(isClient, isClient ? requestContent(JFileChooser.FILES_ONLY) : requestContent(JFileChooser.DIRECTORIES_ONLY));
         }
     }
 
-    /*
-     * True  - Client
-     * False - Server
-     */
-    public static Boolean requestMode() {
+    private static void run(boolean isClient, File file) {
+        if (isClient) {
+            log.info("Modo de operação -> CLIENT");
+            new Client(file);
+        } else {
+            log.info("Modo de operação -> SERVER");
+            new Server(file);
+        }
+    }
+
+    public static boolean cliMode(String mode) {
+        if (mode != null) {
+            switch (mode.charAt(0)) {
+                case 'C':
+                case 'c':
+                    return true;
+                case 'S':
+                case 's':
+                    return false;
+            }
+        }
+        log.error("Modo de operação inválido");
+        System.exit(-1);
+        return false;
+    }
+
+    public static File cliContent(String path) {
+        if (path != null) {
+            File file = new File(path);
+            if (file.exists()) {
+                return file;
+            }
+        }
+        log.error("Caminho inválido");
+        System.exit(-1);
+        return null;
+    }
+
+    public static boolean requestMode() {
         int response = JOptionPane.showOptionDialog(
             null,
             "Escolha o modo de execução",

@@ -2,7 +2,7 @@ import java.io.File;
 
 public class Server {
 
-    private final Logger log;
+    private final UserInterface ui;
     private final FileManager fileManager;
     private final ServerSocket socket;
     private int ack;
@@ -10,9 +10,9 @@ public class Server {
     private boolean[] ackBuffer;
 
     public Server(File file) {
-        this.log = new Logger("[SERVER] ");
+        this.ui = new UserInterface("[SERVER]");
         this.fileManager = new FileManager(file);
-        this.socket = new ServerSocket(log);
+        this.socket = new ServerSocket(ui);
         this.ack = 0;
         listen();
     }
@@ -54,7 +54,6 @@ public class Server {
 
     public void finish() {
         fileManager.initWriter().writePackages(data);
-        log.separator().info("Dados salvos com sucesso!");
-        System.exit(0);
+        ui.finish("Data saved successfully!");
     }
 }

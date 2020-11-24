@@ -3,7 +3,7 @@ import java.io.File;
 
 public class App {
 
-    private static final Logger log = new Logger("[MENU] ");
+    private static final UserInterface ui = new UserInterface("[MENU]");
 
     public static void main(String[] args) {
         if (args.length == 2) {
@@ -16,10 +16,10 @@ public class App {
 
     private static void run(boolean isClient, File file) {
         if (isClient) {
-            log.info("Modo de operação -> CLIENT");
+            ui.log("Operation mode -> CLIENT");
             new Client(file);
         } else {
-            log.info("Modo de operação -> SERVER");
+            ui.log("Operation mode -> SERVER");
             new Server(file);
         }
     }
@@ -35,9 +35,7 @@ public class App {
                     return false;
             }
         }
-        log.error("Modo de operação inválido");
-        System.exit(-1);
-        return false;
+        return ui.abort("Invalid operation mode");
     }
 
     public static File cliContent(String path) {
@@ -47,20 +45,18 @@ public class App {
                 return file;
             }
         }
-        log.error("Caminho inválido");
-        System.exit(-1);
-        return null;
+        return ui.abort("Invalid path");
     }
 
     public static boolean requestMode() {
         int response = JOptionPane.showOptionDialog(
             null,
-            "Escolha o modo de execução",
-            "Transmissor",
+            "Operation Mode",
+            Constants.APPLICATION_TITLE,
             JOptionPane.DEFAULT_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
-            new String[]{"Cliente", "Servidor"},
+            new String[]{"Client", "Server"},
             -1);
         switch (response) {
             case 0:
@@ -68,7 +64,7 @@ public class App {
             case 1:
                 return false;
             default:
-                return Exit();
+                return ui.abort("Aborted by the user");
         }
     }
 
@@ -80,12 +76,7 @@ public class App {
         if (file != null && file.exists()) {
             return file;
         }
-        return Exit();
+        return ui.abort("Aborted by the user");
     }
 
-    private static <T> T Exit() {
-        log.error("Programa abortado pelo usuário");
-        System.exit(9);
-        return null;
-    }
 }

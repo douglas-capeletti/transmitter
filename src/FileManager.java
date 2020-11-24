@@ -5,13 +5,14 @@ import java.util.Arrays;
 
 public class FileManager {
 
-    private static final Logger log = new Logger("[FILE_MANAGER] ");
+    private final UserInterface ui;
     private File file;
     private String outputFilename;
     private InputStream inputStream;
     private FileOutputStream outputStream;
 
     public FileManager(File file) {
+        this.ui = new UserInterface("[FILE_MANAGER]");
         this.file = file;
     }
 
@@ -19,21 +20,21 @@ public class FileManager {
         try {
             inputStream = new FileInputStream(file);
         } catch (FileNotFoundException e) {
-            log.error("Erro ao inicializar arquivo", e);
+            ui.abort("Error while initializing file");
         }
         return this;
     }
 
     public FileManager initWriter() {
-        outputFilename += "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_hh-mm-ss"));
+        outputFilename += " " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_hh-mm-ss"));
         file = new File(file, outputFilename);
         try {
-            if (file.createNewFile()) {
-                log.info("Arquivo de saída criado com sucesso");
+            if(!file.createNewFile()){
+                ui.abort("Error while creating output file");
             }
             outputStream = new FileOutputStream(file);
         } catch (IOException e) {
-            log.error("Erro ao inicializar arquivo", e);
+            ui.abort("Error while initializing file");
         }
         return this;
     }
@@ -49,7 +50,7 @@ public class FileManager {
                 }
             }
         } catch (IOException e) {
-            log.error("Erro ao ler pacotes", e);
+            ui.abort("Error while reading file");
         }
         return packets;
     }
@@ -60,15 +61,11 @@ public class FileManager {
                 outputStream.write(bytes);
             }
         } catch (IOException e) {
-            log.error("Erro ao escrever no arquivo destino", e);
+            ui.abort("Error while writing file");
         }
     }
 
     public void setOutputFilename(String outputFilename) {
         this.outputFilename = outputFilename;
-    }
-
-    public File getFile() {
-        return file;
     }
 }

@@ -3,21 +3,20 @@ import java.net.*;
 
 public class ClientSocket {
 
-    private final Logger log;
+    private final UserInterface ui;
     private final byte[] buffer;
     private DatagramSocket socket;
     private InetAddress hostIP;
 
-    public ClientSocket(Logger log) {
-        this.log = log;
+    public ClientSocket(UserInterface ui) {
+        this.ui = ui;
         this.buffer = new byte[Constants.OFFSET_SIZE];
         try {
             this.hostIP = InetAddress.getByName("localhost");
             this.socket = new DatagramSocket(Constants.CLIENT_PORT);
 //            this.socket.setSoTimeout(500);
         } catch (UnknownHostException | SocketException error) {
-            log.error("Erro while creating client socket", error);
-            System.exit(-1);
+            ui.abort("Error while creating client socket");
         }
     }
 
@@ -25,9 +24,9 @@ public class ClientSocket {
         byte[] data = pack.getData();
         try {
             socket.send(new DatagramPacket(data, data.length, hostIP, Constants.SERVER_PORT));
-            log.info("Sending sequence: " + pack.getId());
+            ui.log("Sending sequence: " + pack.getId());
         } catch (IOException e) {
-            log.error("Error while sending packet", e);
+            ui.abort("Error while sending packet");
         }
     }
 
@@ -36,10 +35,10 @@ public class ClientSocket {
         try {
             socket.receive(getAck);
         } catch (IOException e) {
-            log.error("Error while receiving packet ", e);
+            ui.abort("Error while receiving packet");
         }
         Package pack = Package.decomposeACK(getAck.getData());
-        log.info("Receiving ACK: " + pack.getId());
+        ui.log("Receiving ACK: " + pack.getId());
         return pack;
     }
 }

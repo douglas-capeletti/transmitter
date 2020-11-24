@@ -1,5 +1,6 @@
 public class Constants {
 
+    public static final String APPLICATION_TITLE = "UDP File Transmitter";
     public static final int BUFFER_SIZE = 300;
     public static final int OFFSET_SIZE = 4;
     public static final int DATA_SIZE = 296;

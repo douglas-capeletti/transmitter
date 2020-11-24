@@ -2,7 +2,7 @@ import java.io.File;
 
 public class Client {
 
-    private final Logger log;
+    private final UserInterface ui;
     private final FileManager fileManager;
     private final ClientSocket socket;
     private int ack;
@@ -13,9 +13,9 @@ public class Client {
     private byte[][] fragments;
 
     public Client(File file) {
-        this.log = new Logger("[CLIENT] ");
+        this.ui = new UserInterface("[CLIENT]");
         this.fileManager = new FileManager(file).initReader();
-        this.socket = new ClientSocket(log);
+        this.socket = new ClientSocket(ui);
         this.bandwidth = 1;
         sendFirst(file);
         send();
@@ -58,7 +58,7 @@ public class Client {
     private void receiveAck() {
         for (int i = 0; i < bandwidth; i++){
             if(ack == fragments.length){
-                finish();
+                ui.finish("Data sent successfully!");
             }
             int newAck = socket.receive().getId();
             if (newAck == ack) {
@@ -77,11 +77,6 @@ public class Client {
         socket.send(Package.build(ack, fragments[ack]));
         ackCount = 0;
 //        bandwidth /= 2; TODO reativar esse cara depois, mexer aqui vai dar problema com o for do receiveAck
-    }
-
-    private void finish() {
-        log.separator().info("Dados enviados com sucesso!");
-        System.exit(0);
     }
 
 //    //TODO arrumar essa porra

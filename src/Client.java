@@ -1,4 +1,5 @@
 import java.io.File;
+import java.util.zip.CRC32;
 
 public class Client {
 
@@ -36,8 +37,11 @@ public class Client {
     }
 
     private void sendPackages() {
+        //CRC32 crc32 = new CRC32();
         byte[][] packages = fileManager.readNPackets(bandwidth, Constants.DATA_SIZE);
         for (byte[] data : packages) {
+            //crc32.update(data);
+            //System.out.println(crc32.getValue());
             fragments[sequenceNumber] = data;
             socket.send(Package.build(sequenceNumber, data));
             sequenceNumber++;
@@ -56,18 +60,22 @@ public class Client {
     }
 
     private void receiveAck() {
-        for (int i = 0; i < bandwidth; i++){
-            if(ack == fragments.length){
+        for (int i = 0; i < bandwidth; i++) {
+            if (ack == fragments.length) {
                 ui.finish("Data sent successfully!");
             }
             int newAck = socket.receive().getId();
             if (newAck == ack) {
                 ackCount++;
+            } else if (newAck != ack + 1) {
+                ackCount = 0;
+                timeoutRetransmit(ack + 1);
             } else {
                 ack = newAck;
                 ackCount = 0;
             }
-            if (ackCount > 2) {
+            if (ackCount > 2) { // fast retransmit
+                ackCount = 0;
                 retransmit();
             }
         }
@@ -77,6 +85,35 @@ public class Client {
         socket.send(Package.build(ack, fragments[ack]));
         ackCount = 0;
 //        bandwidth /= 2; TODO reativar esse cara depois, mexer aqui vai dar problema com o for do receiveAck
+    }
+
+    private void timeoutRetransmit(int timeoutPackage){
+        bandwidth = 1;
+        congestionAvoidance = false;
+        int sentPacks = 0;
+        while (true){
+            for (int i = 0; i < bandwidth; i++){
+                socket.send(Package.build(timeoutPackage + sentPacks, fragments[timeoutPackage + sentPacks]));
+                sentPacks++;
+            }
+            receiveAck();
+            bandwidthHandler();
+            if(timeoutPackage + sentPacks + bandwidth > sequenceNumber) {
+                break;
+            }
+        }
+        byte[][] packages = fileManager.readNPackets(bandwidth - (sequenceNumber - timeoutPackage - sentPacks), Constants.DATA_SIZE);
+        while (timeoutPackage + sentPacks != sequenceNumber) {
+            socket.send(Package.build(timeoutPackage + sentPacks, fragments[timeoutPackage + sentPacks]));
+            sentPacks++;
+        }
+        for (byte[] data : packages) {
+            fragments[sequenceNumber] = data;
+            socket.send(Package.build(sequenceNumber, data));
+            sequenceNumber++;
+        }
+        receiveAck();
+        send();
     }
 
 //    //TODO arrumar essa porra

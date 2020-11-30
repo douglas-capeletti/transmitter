@@ -14,6 +14,7 @@ public class ServerSocket {
         try {
             this.hostIP = InetAddress.getByName("localhost");
             this.socket = new DatagramSocket(Constants.SERVER_PORT);
+            //this.socket.setSoTimeout(3000);
         } catch (SocketException | UnknownHostException e) {
             ui.abort("Error while creating server socket");
         }

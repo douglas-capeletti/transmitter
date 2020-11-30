@@ -1,6 +1,7 @@
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.zip.CRC32;
 
 public class Package {
 
@@ -9,6 +10,7 @@ public class Package {
     private int totalPackages;
     private String fileName;
     private byte[] data;
+    private long crc;
 
     private Package() {
     }
@@ -41,10 +43,18 @@ public class Package {
     public static Package build(int id, byte[] content) {
         byte[] idFragment = ByteBuffer.allocate(Constants.OFFSET_SIZE).putInt(id).array();
         byte[] data = new byte[Constants.BUFFER_SIZE];
+
+        CRC32 crc32 = new CRC32();
+        crc32.update(content);
+        long crc = crc32.getValue();
+
         System.arraycopy(idFragment, 0, data, 0, idFragment.length);
-        System.arraycopy(content, 0, data, idFragment.length, content.length);
+        System.arraycopy(longToBytes(crc), 0, data, idFragment.length, 8);
+        System.arraycopy(content, 0, data, idFragment.length + 8, content.length);
+
         return Package.builder()
             .setId(id)
+            .setCrc(crc)
             .setData(data);
     }
 
@@ -58,6 +68,10 @@ public class Package {
     public static Package decompose(byte[] content) {
         byte[] idFragment = Arrays.copyOfRange(content, 0, Constants.OFFSET_SIZE);
         int id = ByteBuffer.wrap(idFragment).getInt();
+
+        byte[] crcFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE + 8);
+        long crc = ByteBuffer.wrap(crcFragment).getLong();
+
         if (id == FIRST_PACKAGE_ID) {
             byte[] totalFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE * 2);
             int totalPackages = ByteBuffer.wrap(totalFragment).getInt();
@@ -68,9 +82,11 @@ public class Package {
                 .setTotalPackages(totalPackages)
                 .setFileName(filename);
         }
-        byte[] data = Arrays.copyOfRange(content, Constants.OFFSET_SIZE, content.length);
+
+        byte[] data = Arrays.copyOfRange(content, Constants.OFFSET_SIZE + 8, content.length);
         return Package.builder()
             .setId(id)
+            .setCrc(crc)
             .setData(data);
     }
 
@@ -119,5 +135,21 @@ public class Package {
     private Package setData(byte[] data) {
         this.data = data;
         return this;
+    }
+
+    public long getCrc() { return crc; }
+
+    private Package setCrc(long crc){
+        this.crc = crc;
+        return this;
+    }
+
+    public static byte[] longToBytes(long l) {
+        byte[] result = new byte[8];
+        for (int i = 7; i >= 0; i--) {
+            result[i] = (byte) (l & 0xFF);
+            l >>= 8;
+        }
+        return result;
     }
 }

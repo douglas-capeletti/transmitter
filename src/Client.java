@@ -1,5 +1,4 @@
 import java.io.File;
-import java.util.zip.CRC32;
 
 public class Client {
 
@@ -37,11 +36,8 @@ public class Client {
     }
 
     private void sendPackages() {
-        //CRC32 crc32 = new CRC32();
         byte[][] packages = fileManager.readNPackets(bandwidth, Constants.DATA_SIZE);
         for (byte[] data : packages) {
-            //crc32.update(data);
-            //System.out.println(crc32.getValue());
             fragments[sequenceNumber] = data;
             socket.send(Package.build(sequenceNumber, data));
             sequenceNumber++;
@@ -116,25 +112,4 @@ public class Client {
         send();
     }
 
-//    //TODO arrumar essa porra
-//    private void timeoutFixer(int lossFragment) {
-//        this.bandwidth = 1;
-//        this.fragments = Arrays.copyOfRange(fragments, lossFragment, fragments.size() - 1);
-//        do {
-//            if (fragments.size() < bandwidth) {
-//                concat(bandwidth - fragments.size());
-//            }
-//            for (int i = 0; i < bandwidth; i++) {
-//                this.send(Package.build(sequenceNumber, fragments[i]));
-//            }
-//            this.fragments = Arrays.copyOfRange(fragments, bandwidth, fragments.size() - 1);
-//            jumpValidator();
-//        } while (fragments.size() >= bandwidth);
-//        sendPackages();
-//    }
-//
-//    private void concat(int quantity) {
-//        fragments = Arrays.copyOf(fragments, bandwidth);
-//        System.arraycopy(fileManager.readNPackets(quantity, buffer.length), 0, fragments, fragments.size() - quantity, quantity);
-//    }
 }

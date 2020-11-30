@@ -1,4 +1,5 @@
 import java.io.File;
+import java.util.zip.CRC32;
 
 public class Server {
 
@@ -25,11 +26,15 @@ public class Server {
                 data = new byte[pack.getTotalPackages()][Constants.BUFFER_SIZE];
                 ackBuffer = new boolean[pack.getTotalPackages()];
             } else {
-                sendAck(pack.getId());
-                if (pack.getId() == ackBuffer.length - 1) {
-                    finish();
-                } else {
-                    data[pack.getId()] = pack.getData();
+                CRC32 crc32 = new CRC32();
+                crc32.update(pack.getData());
+                if(pack.getCrc() == crc32.getValue()) {
+                    sendAck(pack.getId());
+                    if (pack.getId() == (ackBuffer.length - 1)) {
+                        finish();
+                    } else {
+                        data[pack.getId()] = pack.getData();
+                    }
                 }
             }
         }

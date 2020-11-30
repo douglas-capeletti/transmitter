@@ -30,12 +30,10 @@ public class Server {
                 crc32.update(pack.getData());
                 if(pack.getCrc() == crc32.getValue()) {
                     sendAck(pack.getId());
-                    if (pack.getId() == (ackBuffer.length - 1)) {
-                        finish();
-                    } else {
-                        data[pack.getId()] = pack.getData();
-                    }
+                    data[pack.getId()] = pack.getData();
                 }
+                if (pack.getId() == (ackBuffer.length - 1))
+                    finish();
             }
         }
     }

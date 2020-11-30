@@ -69,9 +69,6 @@ public class Package {
         byte[] idFragment = Arrays.copyOfRange(content, 0, Constants.OFFSET_SIZE);
         int id = ByteBuffer.wrap(idFragment).getInt();
 
-        byte[] crcFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE + 8);
-        long crc = ByteBuffer.wrap(crcFragment).getLong();
-
         if (id == FIRST_PACKAGE_ID) {
             byte[] totalFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE * 2);
             int totalPackages = ByteBuffer.wrap(totalFragment).getInt();
@@ -82,6 +79,9 @@ public class Package {
                 .setTotalPackages(totalPackages)
                 .setFileName(filename);
         }
+
+        byte[] crcFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE + 8);
+        long crc = ByteBuffer.wrap(crcFragment).getLong();
 
         byte[] data = Arrays.copyOfRange(content, Constants.OFFSET_SIZE + 8, content.length);
         return Package.builder()
@@ -95,6 +95,15 @@ public class Package {
         int id = ByteBuffer.wrap(idFragment).getInt();
         return Package.builder()
             .setId(id);
+    }
+
+    public static byte[] longToBytes(long l) {
+        byte[] result = new byte[8];
+        for (int i = 7; i >= 0; i--) {
+            result[i] = (byte) (l & 0xFF);
+            l >>= 8;
+        }
+        return result;
     }
 
     public boolean isFirst() {
@@ -137,19 +146,20 @@ public class Package {
         return this;
     }
 
-    public long getCrc() { return crc; }
+    public long getCrc() {
+        return crc;
+    }
 
-    private Package setCrc(long crc){
+    private Package setCrc(long crc) {
         this.crc = crc;
         return this;
     }
 
-    public static byte[] longToBytes(long l) {
-        byte[] result = new byte[8];
-        for (int i = 7; i >= 0; i--) {
-            result[i] = (byte) (l & 0xFF);
-            l >>= 8;
+    public void validate() {
+        CRC32 crc32 = new CRC32();
+        crc32.update(this.data);
+        if (this.getCrc() != crc32.getValue()) {
+            System.err.println("CRC INVÁLIDO, PACK ID: " + this.getId());
         }
-        return result;
     }
 }

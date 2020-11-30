@@ -26,14 +26,13 @@ public class Server {
                 data = new byte[pack.getTotalPackages()][Constants.BUFFER_SIZE];
                 ackBuffer = new boolean[pack.getTotalPackages()];
             } else {
-                CRC32 crc32 = new CRC32();
-                crc32.update(pack.getData());
-                if(pack.getCrc() == crc32.getValue()) {
-                    sendAck(pack.getId());
-                    data[pack.getId()] = pack.getData();
-                }
-                if (pack.getId() == (ackBuffer.length - 1))
+                pack.validate();
+                sendAck(pack.getId());
+                if (pack.getId() == (ackBuffer.length - 1)) {
                     finish();
+                }
+                data[pack.getId()] = pack.getData();
+
             }
         }
     }

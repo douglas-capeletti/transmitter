@@ -44,13 +44,13 @@ public class Package {
         byte[] idFragment = ByteBuffer.allocate(Constants.OFFSET_SIZE).putInt(id).array();
         byte[] data = new byte[Constants.BUFFER_SIZE];
 
-        CRC32 crc32 = new CRC32();
-        crc32.update(content);
-        long crc = crc32.getValue();
-
         System.arraycopy(idFragment, 0, data, 0, idFragment.length);
-        System.arraycopy(longToBytes(crc), 0, data, idFragment.length, 8);
         System.arraycopy(content, 0, data, idFragment.length + 8, content.length);
+
+        CRC32 crc32 = new CRC32();
+        crc32.update(Arrays.copyOfRange(data,12,data.length));
+        long crc = crc32.getValue();
+        System.arraycopy(longToBytes(crc), 0, data, idFragment.length, 8);
 
         return Package.builder()
             .setId(id)

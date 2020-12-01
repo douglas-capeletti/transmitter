@@ -1,4 +1,6 @@
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -8,6 +10,7 @@ public class FileManager {
     private final UserInterface ui;
     private File file;
     private String outputFilename;
+    private String md5Hash;
     private InputStream inputStream;
     private FileOutputStream outputStream;
 
@@ -19,6 +22,7 @@ public class FileManager {
     public FileManager initReader() {
         try {
             inputStream = new FileInputStream(file);
+            this.setMd5Hash(generateMD5Hash());
         } catch (FileNotFoundException e) {
             ui.abort("Error while initializing file");
         }
@@ -29,7 +33,7 @@ public class FileManager {
         outputFilename += " " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_hh-mm-ss"));
         file = new File(file, outputFilename);
         try {
-            if(!file.createNewFile()){
+            if (!file.createNewFile()) {
                 ui.abort("Error while creating output file");
             }
             outputStream = new FileOutputStream(file);
@@ -55,21 +59,68 @@ public class FileManager {
         return packets;
     }
 
-    public void writePackages(byte[][] packages) {
+    public void writeAndValidate(byte[][] packages) {
         try {
             for (byte[] bytes : packages) {
                 outputStream.write(bytes);
             }
+            validateMd5Hash();
         } catch (IOException e) {
             ui.abort("Error while writing file");
         }
+    }
+
+    private void validateMd5Hash() {
+        String newHash = generateMD5Hash();
+        if (newHash.equals(md5Hash)) {
+            ui.log("MD5Hash successfully validated");
+        } else {
+            ui.abort("Invalid MD5Hash");
+        }
+    }
+
+    public String getMd5Hash() {
+        return md5Hash;
+    }
+
+    public void setMd5Hash(String md5Hash) {
+        this.md5Hash = md5Hash;
     }
 
     public void setOutputFilename(String outputFilename) {
         this.outputFilename = outputFilename;
     }
 
-    public File getFile(){
-        return file;
+    public String generateMD5Hash() {
+        try {
+            MessageDigest md5Digest = MessageDigest.getInstance("MD5");
+            String md5Hash = getFileChecksum(md5Digest, file);
+            ui.log("Hash MD5 do arquivo: " + md5Hash);
+            return md5Hash;
+        } catch (IOException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            ui.log("Error generating MD5Hash");
+        }
+        return null;
+    }
+
+    private String getFileChecksum(MessageDigest digest, File file) throws IOException {
+        FileInputStream fis = new FileInputStream(file);
+
+        byte[] byteArray = new byte[1024];
+        int bytesCount;
+
+        while ((bytesCount = fis.read(byteArray)) != -1) {
+            digest.update(byteArray, 0, bytesCount);
+        }
+
+        fis.close();
+        StringBuilder sb = new StringBuilder();
+
+        byte[] bytes = digest.digest();
+        for (byte aByte : bytes) {
+            sb.append(Integer.toString((aByte & 0xff) + 0x100, 16).substring(1));
+        }
+        return sb.toString();
     }
 }

@@ -1,5 +1,4 @@
 import java.io.File;
-import java.util.zip.CRC32;
 
 public class Server {
 
@@ -23,6 +22,7 @@ public class Server {
             Package pack = socket.receive();
             if (pack.isFirst()) {
                 fileManager.setOutputFilename(pack.getFileName());
+                fileManager.setMd5Hash(pack.getMd5Hash());
                 data = new byte[pack.getTotalPackages()][Constants.BUFFER_SIZE];
                 ackBuffer = new boolean[pack.getTotalPackages()];
             } else {
@@ -55,7 +55,7 @@ public class Server {
     }
 
     public void finish() {
-        fileManager.initWriter().writePackages(data);
+        fileManager.initWriter().writeAndValidate(data);
         ui.finish("Data saved successfully!");
     }
 }

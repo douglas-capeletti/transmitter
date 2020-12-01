@@ -17,12 +17,12 @@ public class Client {
         this.fileManager = new FileManager(file).initReader();
         this.socket = new ClientSocket(ui);
         this.bandwidth = 1;
-        sendFirst(file);
+        sendFirst(file, fileManager.getMd5Hash());
         send();
     }
 
-    private void sendFirst(File file) {
-        Package pack = Package.buildFirst(file);
+    private void sendFirst(File file, String md5Hash) {
+        Package pack = Package.buildFirst(file, md5Hash);
         fragments = new byte[pack.getTotalPackages()][Constants.BUFFER_SIZE];
         socket.send(pack);
     }
@@ -56,7 +56,8 @@ public class Client {
     }
 
     private void receiveAck() {
-        for (int i = 0; i < bandwidth; i++) {
+        int currentBandWidth = bandwidth;
+        for (int i = 0; i < currentBandWidth; i++) {
             if (ack == fragments.length) {
                 ui.finish("Data sent successfully!");
             }
@@ -70,7 +71,7 @@ public class Client {
                 ack = newAck;
                 ackCount = 0;
             }
-            if (ackCount > 2) { // fast retransmit
+            if (ackCount > 2) {
                 ackCount = 0;
                 retransmit();
             }
@@ -80,7 +81,7 @@ public class Client {
     private void retransmit() {
         socket.send(Package.build(ack, fragments[ack]));
         ackCount = 0;
-//        bandwidth /= 2; TODO reativar esse cara depois, mexer aqui vai dar problema com o for do receiveAck
+        bandwidth /= 2;
     }
 
     private void timeoutRetransmit(int timeoutPackage){

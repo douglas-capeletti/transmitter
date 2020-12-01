@@ -8,6 +8,7 @@ public class Package {
     public static final int FIRST_PACKAGE_ID = -1;
     private int id;
     private int totalPackages;
+    private String md5Hash;
     private String fileName;
     private byte[] data;
     private long crc;
@@ -19,23 +20,28 @@ public class Package {
         return new Package();
     }
 
-    public static Package buildFirst(File file) {
+    public static Package buildFirst(File file, String md5Hash) {
         byte[] idFragment = ByteBuffer.allocate(Constants.OFFSET_SIZE).putInt(FIRST_PACKAGE_ID).array();
 
         int totalPackages = (int) Math.ceil(((double) file.length()) / Constants.DATA_SIZE);
         byte[] totalFragment = ByteBuffer.allocate(Constants.OFFSET_SIZE).putInt(totalPackages).array();
 
+        byte[] hashFragment = md5Hash.getBytes();
+
         String fileName = file.getName();
         byte[] filenameFragment = fileName.getBytes();
 
         byte[] data = new byte[Constants.BUFFER_SIZE];
-        System.arraycopy(idFragment, 0, data, 0, idFragment.length);
-        System.arraycopy(totalFragment, 0, data, idFragment.length, totalFragment.length);
-        System.arraycopy(filenameFragment, 0, data, idFragment.length + totalFragment.length, filenameFragment.length);
+
+        System.arraycopy(idFragment, 0, data, 0, Constants.OFFSET_SIZE);
+        System.arraycopy(totalFragment, 0, data, Constants.OFFSET_SIZE, Constants.OFFSET_SIZE);
+        System.arraycopy(hashFragment, 0, data, Constants.OFFSET_SIZE * 2, 16);
+        System.arraycopy(filenameFragment, 0, data, idFragment.length + totalFragment.length + 16, filenameFragment.length);
 
         return Package.builder()
             .setId(FIRST_PACKAGE_ID)
             .setTotalPackages(totalPackages)
+            .setMd5Hash(md5Hash)
             .setFileName(fileName)
             .setData(data);
     }
@@ -48,7 +54,7 @@ public class Package {
         System.arraycopy(content, 0, data, idFragment.length + 8, content.length);
 
         CRC32 crc32 = new CRC32();
-        crc32.update(Arrays.copyOfRange(data,12,data.length));
+        crc32.update(Arrays.copyOfRange(data, 12, data.length));
         long crc = crc32.getValue();
         System.arraycopy(longToBytes(crc), 0, data, idFragment.length, 8);
 
@@ -70,13 +76,18 @@ public class Package {
         int id = ByteBuffer.wrap(idFragment).getInt();
 
         if (id == FIRST_PACKAGE_ID) {
-            byte[] totalFragment = Arrays.copyOfRange(content, idFragment.length, Constants.OFFSET_SIZE * 2);
+            byte[] totalFragment = Arrays.copyOfRange(content, Constants.OFFSET_SIZE, Constants.OFFSET_SIZE * 2);
             int totalPackages = ByteBuffer.wrap(totalFragment).getInt();
-            byte[] fileNameFragment = Arrays.copyOfRange(content, Constants.OFFSET_SIZE * 2, content.length);
+
+            byte[] hashFragment = Arrays.copyOfRange(content, Constants.OFFSET_SIZE * 2, (Constants.OFFSET_SIZE * 2) + 16);
+            String md5Hash = new String(hashFragment).trim();
+
+            byte[] fileNameFragment = Arrays.copyOfRange(content, (Constants.OFFSET_SIZE * 2) + 16, content.length);
             String filename = new String(fileNameFragment).trim();
             return Package.builder()
                 .setId(id)
                 .setTotalPackages(totalPackages)
+                .setMd5Hash(md5Hash)
                 .setFileName(filename);
         }
 
@@ -125,6 +136,15 @@ public class Package {
 
     private Package setTotalPackages(int totalPackages) {
         this.totalPackages = totalPackages;
+        return this;
+    }
+
+    public String getMd5Hash() {
+        return md5Hash;
+    }
+
+    private Package setMd5Hash(String md5Hash) {
+        this.md5Hash = md5Hash;
         return this;
     }
 

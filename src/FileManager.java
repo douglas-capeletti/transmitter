@@ -61,8 +61,12 @@ public class FileManager {
 
     public void writeAndValidate(byte[][] packages) {
         try {
-            for (byte[] bytes : packages) {
-                outputStream.write(bytes);
+            for (int i = 0; i < packages.length; i++) {
+                byte[] bytes = packages[i];
+                String content = new String(bytes).trim();
+                if (!(content.isEmpty())) {
+                    outputStream.write(content.getBytes());
+                }
             }
             validateMd5Hash();
         } catch (IOException e) {

@@ -28,10 +28,10 @@ public class Server {
             } else {
                 pack.validate();
                 sendAck(pack.getId());
+                data[pack.getId()] = pack.getData();
                 if (pack.getId() == (ackBuffer.length - 1)) {
                     finish();
                 }
-                data[pack.getId()] = pack.getData();
 
             }
         }

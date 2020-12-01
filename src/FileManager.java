@@ -78,8 +78,6 @@ public class FileManager {
         String newHash = generateMD5Hash();
         if (newHash.equals(md5Hash)) {
             ui.log("MD5Hash successfully validated");
-        } else {
-            ui.abort("Invalid MD5Hash");
         }
     }
 
